@@ -2,7 +2,10 @@ const globalError = require("../Middlewares/ErreurMiddelware");
 const User = require("../Models/UsersModel");
 const Role = require("../Models/RoleModel");
 const SendMail = require("../Tools/EmailTools");
-const { verificationEmail,GererateAccessToken } = require("../Tools/AuthentificationTools");
+const {
+  verificationEmail,
+  GererateAccessToken,
+} = require("../Tools/AuthentificationTools");
 const crypto = require("crypto");
 const bcryptjs = require("bcryptjs");
 const localstorage = require("local-storage");
@@ -21,8 +24,16 @@ exports.Register = async (req, res) => {
       body.token = crypto.randomBytes(32).toString("hex");
       body.roleid = findrole._id;
       await User.create({ ...body });
-      res.json("verifies votre email <a href=https://mail.google.com/mail/u/0/#inbox >");
-      SendMail(body.email,body.token,body.name, "to activate your account", "/configiration/");
+      res.json(
+        "verifies votre email <a href=https://mail.google.com/mail/u/0/#inbox >"
+      );
+      SendMail(
+        body.email,
+        body.token,
+        body.name,
+        "to activate your account",
+        "/configiration/"
+      );
     } else res.status(400).json("invalide mail");
   } catch (e) {
     return res.status(400).send({ message: e });
@@ -36,12 +47,24 @@ exports.login = async (req, res) => {
     if (!user) res.status(400).json("can't find this user");
     else {
       const payload = { userId: user._id, username: user.name };
-      if(await bcryptjs.compare(req.body.password, user.password)) {
-        localstorage("token",GererateAccessToken({payload},"120m"));
-        res.status(200).json({ token: localstorage("token"), username: users.fullname });
+      if (await bcryptjs.compare(req.body.password, user.password)) {
+        // localstorage("token",GererateAccessToken({payload},"120m"));
+        // res.status(200).json({ token: localstorage("token"), username: user.name });
+        // res.send("you logged in");
+        res.render("homePage");
       } else res.status(400).json("password invalide");
     }
   } catch (e) {
     return res.status(400).json(e.message);
   }
-  };
+};
+// method : put => url : api/auth/configiration/:token =>acces : Public
+exports.VerificationToken = (req, res) => {
+  User.updateOne({ token: req.params.token }, { is_active: true })
+    .then((result) => {
+      res.status(200).json(result);
+    })
+    .catch((e) => {
+      res.status(400).json(e.message);
+    });
+};
